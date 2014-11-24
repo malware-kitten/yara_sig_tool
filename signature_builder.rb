@@ -69,7 +69,9 @@ if options[:file] and options[:offset]
 		sig = ""
 		if i.id == X86::INS_CALL
 			#keep the opcodes if it's calling a register, otherwise wildcard
-			if i.op_str.to_s =~ /eax|edi|esi|ecx|edx|ebx/
+			if i.op_str.to_s =~ /[^0x]/
+				#still need to figure out the case for wildcarding 
+				#FF15E8904000	call	dword ptr [0x4090e8]
 				i.bytes.each {|x| sig << sprintf("%02X",x)}
 			else
 				sig << "E8"
@@ -83,7 +85,8 @@ if options[:file] and options[:offset]
 				i.bytes.each {|x| sig << sprintf("%02X",x)}	
 			end
 		elsif i.id == X86::INS_MOV
-			#for right now, we're not going to fix this :)
+			#for right now, we're not going to fix this 
+			#seeking out an implementation where i don't have to write a lot of cases
 			i.bytes.each {|x| sig << sprintf("%02X",x)}
 		else
 			i.bytes.each {|x| sig << sprintf("%02X",x)}
