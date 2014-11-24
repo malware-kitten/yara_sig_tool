@@ -68,8 +68,13 @@ if options[:file] and options[:offset]
 	cs.disasm(item,options[:offset]).each do |i|
 		sig = ""
 		if i.id == X86::INS_CALL
-			sig << "E8"
-			(i.bytes.length - 1).times {|x| sig << "??"}
+			#keep the opcodes if it's calling a register, otherwise wildcard
+			if i.op_str.to_s =~ /eax|edi|esi|ecx|edx|ebx/
+				i.bytes.each {|x| sig << sprintf("%02X",x)}
+			else
+				sig << "E8"
+				(i.bytes.length - 1).times {|x| sig << "??"}
+			end
 		elsif i.id == X86::INS_PUSH
 			if i.op_str.to_s.hex > @loadaddr
 				sig << sprintf("%02X",i.bytes.first)
