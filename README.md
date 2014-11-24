@@ -79,3 +79,4 @@ To be implemented
 ------------
 * wildcarding of mov's 
 * wildcarding of lea's 
+* wildcarding of jmp's to absolute locations
