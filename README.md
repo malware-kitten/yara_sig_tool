@@ -7,6 +7,14 @@ This is a utility written in ruby using the Capstone Engine to build yara rules 
 
 For now, the script will wildcard out calls and pushes that are referencing locations within the binary addr space.
 
+
+Requirements
+------------
+* Capstone Engine
+* Crabstone
+* PeDump
+* optparse
+
 Usage
 ------------
 Run with the -h to get back the help (not much there so far)
