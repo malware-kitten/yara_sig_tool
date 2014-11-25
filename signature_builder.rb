@@ -69,7 +69,7 @@ if options[:file] and options[:offset]
 		sig = ""
 		case i.id
 		when X86::INS_CALL
-			puts "call"
+			#Catch the case of call eax which translates to 0x50
                         if i.op_str.to_s =~ /[^0x]/
                                 i.bytes.each {|x| sig << sprintf("%02X",x)}
                         else
@@ -77,6 +77,7 @@ if options[:file] and options[:offset]
                                 (i.bytes.length - 1).times {|x| sig << "??"}
                         end
 		when X86::INS_PUSH
+			#Case when it's pushing an addr within the addr space 
                         if i.op_str.to_s.hex > @loadaddr && i.op_str.to_s.hex < @loadaddr+@max
                                 sig << sprintf("%02X",i.bytes.first)
                                 (i.bytes.length - 1).times {|x| sig << "??"}
