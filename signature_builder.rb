@@ -66,16 +66,18 @@ if options[:file] and options[:offset]
 	disasm = []
 	cs = Disassembler.new(ARCH_X86, MODE_32)
 	cs.disasm(item,options[:offset]).each do |i|
+		byte = i.bytes.first
 		sig = ""
 		case i.id
+		#x86 Call
 		when X86::INS_CALL
-                        if i.bytes.first.eql?(0xff)
+                        if byte.eql?(0xff)
 				#Call near, absolute indirect
 				#FF15D0904000		call	dword ptr [0x4090d0]
 				#FFD0                   call    eax
 				sig << "FF"
                         	(i.bytes.length - 1).times {|x| sig << "??"}
-			elsif i.bytes.first.eql?(0x9a)
+			elsif byte.eql?(0x9a)
 				#Call far, absolute, address given in operand
                                 sig << "9A"
                                 (i.bytes.length - 1).times {|x| sig << "??"}
@@ -86,12 +88,31 @@ if options[:file] and options[:offset]
                                 sig << "E8"
                                 (i.bytes.length - 1).times {|x| sig << "??"}
                         end
+
+		#x86 push
 		when X86::INS_PUSH
-			#Case when it's pushing an addr within the addr space 
-                        if i.op_str.to_s.hex > @loadaddr && i.op_str.to_s.hex < @loadaddr+@max
-                                sig << sprintf("%02X",i.bytes.first)
+			if byte.eql?(0xff) 
+				#Push with dword to addr
+				#FF35B0AF4100             push    dword_41AFB0
+				sig << sprintf("%02X",i.bytes.first)
                                 (i.bytes.length - 1).times {|x| sig << "??"}
+			elsif byte.eql?(0x68)
+				#push imm
+				#6814954000               push    offset szVerb  
+				#reverse the rest and see if they exist between imagebase and imagebase + max
+				data = i.bytes[1..i.bytes.length].reverse.map {|x| sprintf("%02X",x) }.join.hex
+				if data > @loadaddr && data < @loadaddr+@max
+                                	sig << sprintf("%02X",i.bytes.first)
+                                	(i.bytes.length - 1).times {|x| sig << "??"}
+				else
+					i.bytes.each {|x| sig << sprintf("%02X",x)}
+				end
                         else
+				#Default case
+				#6a Push Constant
+				#6AFF                     push    0FFFFFFFFh
+				#0x50 - 0x57
+				#push esi/edi/eax/ecx ......
                                 i.bytes.each {|x| sig << sprintf("%02X",x)}
                         end
 		when X86::INS_MOV
