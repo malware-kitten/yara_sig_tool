@@ -69,10 +69,20 @@ if options[:file] and options[:offset]
 		sig = ""
 		case i.id
 		when X86::INS_CALL
-			#Catch the case of call eax which translates to 0x50
-                        if i.op_str.to_s =~ /[^0x]/
-                                i.bytes.each {|x| sig << sprintf("%02X",x)}
-                        else
+                        if i.bytes.first.eql?(0xff)
+				#Call near, absolute indirect
+				#FF15D0904000		call	dword ptr [0x4090d0]
+				#FFD0                   call    eax
+				sig << "FF"
+                        	(i.bytes.length - 1).times {|x| sig << "??"}
+			elsif i.bytes.first.eql?(0x9a)
+				#Call far, absolute, address given in operand
+                                sig << "9A"
+                                (i.bytes.length - 1).times {|x| sig << "??"}
+			else
+				#Default case, E8
+				#Call near, relative, displacement relative to next instruction
+				#E864310000                call    sub_404950
                                 sig << "E8"
                                 (i.bytes.length - 1).times {|x| sig << "??"}
                         end
