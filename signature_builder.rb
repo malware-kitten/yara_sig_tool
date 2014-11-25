@@ -67,33 +67,31 @@ if options[:file] and options[:offset]
 	cs = Disassembler.new(ARCH_X86, MODE_32)
 	cs.disasm(item,options[:offset]).each do |i|
 		sig = ""
-		if i.id == X86::INS_CALL
-			#keep the opcodes if it's calling a register, otherwise wildcard
-			if i.op_str.to_s =~ /[^0x]/
-				#still need to figure out the case for wildcarding 
-				#FF15E8904000	call	dword ptr [0x4090e8]
-				i.bytes.each {|x| sig << sprintf("%02X",x)}
-			else
-				sig << "E8"
-				(i.bytes.length - 1).times {|x| sig << "??"}
-			end
-		elsif i.id == X86::INS_PUSH
-			if i.op_str.to_s.hex > @loadaddr
-				sig << sprintf("%02X",i.bytes.first)
-				(i.bytes.length - 1).times {|x| sig << "??"}
-			else
-				i.bytes.each {|x| sig << sprintf("%02X",x)}	
-			end
-		elsif i.id == X86::INS_MOV
-			#for right now, we're not going to fix this 
-			#seeking out an implementation where i don't have to write a lot of cases
-			i.bytes.each {|x| sig << sprintf("%02X",x)}
+		case i.id
+		when X86::INS_CALL
+			puts "call"
+                        if i.op_str.to_s =~ /[^0x]/
+                                i.bytes.each {|x| sig << sprintf("%02X",x)}
+                        else
+                                sig << "E8"
+                                (i.bytes.length - 1).times {|x| sig << "??"}
+                        end
+		when X86::INS_PUSH
+                        if i.op_str.to_s.hex > @loadaddr && i.op_str.to_s.hex < @loadaddr+@max
+                                sig << sprintf("%02X",i.bytes.first)
+                                (i.bytes.length - 1).times {|x| sig << "??"}
+                        else
+                                i.bytes.each {|x| sig << sprintf("%02X",x)}
+                        end
+		when X86::INS_MOV
+                        i.bytes.each {|x| sig << sprintf("%02X",x)}
+		when X86::INS_RET
+			break
 		else
 			i.bytes.each {|x| sig << sprintf("%02X",x)}
 		end
 		disasm << "#{i.bytes.map {|x| sprintf("%02X",x)}.join}\t\t#{i.mnemonic}\t#{i.op_str}\n"
 		signature += sig	
-		break if i.id == X86::INS_RET
 	end
 end
 
