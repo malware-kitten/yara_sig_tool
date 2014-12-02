@@ -119,6 +119,9 @@ if options[:file] and options[:offset]
                         i.bytes.each {|x| sig << sprintf("%02X",x)}
 		when X86::INS_RET
 			break
+		when 255..274  
+			#all of our jump cases, we'll wild card these including the actual jump
+			i.bytes.length.times {|x| sig << "??"}
 		else
 			i.bytes.each {|x| sig << sprintf("%02X",x)}
 		end
