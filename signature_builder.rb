@@ -116,7 +116,32 @@ if options[:file] and options[:offset]
                                 i.bytes.each {|x| sig << sprintf("%02X",x)}
                         end
 		when X86::INS_MOV
-                        i.bytes.each {|x| sig << sprintf("%02X",x)}
+			#wildcard if it's pushing an address within our imagebase and imagebase + max
+			#the easiest way atm to check for this is to check the length and look for a little endian
+			#set of bytes that look like an addr
+			if i.bytes.length > 5
+				#potential canidate for a mov
+				#668B1504424100          mov     dx, ds:word_414204
+				#take the last 4 bytes for the and that should be our addr
+				#the following example is should become
+				#8B15FC414100		mov	edx, dword ptr [0x4141fc]
+    				#8B0D00424100		mov	ecx, dword ptr [0x414200]
+    				#8910		mov	dword ptr [eax], edx
+    				#668B1504424100		mov	dx, word ptr [0x414204]
+    				#53		push	ebx
+				#should become
+    				#8B 15 ?? ?? ?? ?? 8B 0D ?? ?? ?? ?? 89 10 66 8B 15 ?? ?? ?? ?? 53 
+
+				data = i.bytes[i.bytes.length-4..i.bytes.length].reverse.map {|x| sprintf("%02X",x) }.join.hex
+				if data > @loadaddr && data < @loadaddr+@max
+					i.bytes[0..(i.bytes.length-5)].each {|x| sig << sprintf("%02X",x)}
+					4.times {|x| sig << "??"}
+				else
+					i.bytes.each {|x| sig << sprintf("%02X",x)}
+				end
+			else
+                        	i.bytes.each {|x| sig << sprintf("%02X",x)}
+			end
 		when X86::INS_RET
 			break
 		when 255..274  
