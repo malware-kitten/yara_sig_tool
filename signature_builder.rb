@@ -19,8 +19,8 @@ def fetch_real_addr(offset)
 end
 
 def yara_format(instructions, rule)
-	instructions.each {|line| puts "\s\s\s\s//#{line}"}
-	print "\s\s\s\s$a = {"
+	instructions.each {|line| puts "\s\s\s\s\s\s\s\s//#{line}"}
+	print "\s\s\s\s\s\s\s\s$a = {"
 	rule.scan(/../).each {|x| print x+"\s"}
 	print "}"
 	puts
@@ -119,7 +119,7 @@ if options[:file] and options[:offset]
 			#wildcard if it's pushing an address within our imagebase and imagebase + max
 			#the easiest way atm to check for this is to check the length and look for a little endian
 			#set of bytes that look like an addr
-			if i.bytes.length > 5
+			if i.bytes.length >= 5
 				#potential canidate for a mov
 				#668B1504424100          mov     dx, ds:word_414204
 				#take the last 4 bytes for the and that should be our addr
@@ -131,7 +131,8 @@ if options[:file] and options[:offset]
     				#53		push	ebx
 				#should become
     				#8B 15 ?? ?? ?? ?? 8B 0D ?? ?? ?? ?? 89 10 66 8B 15 ?? ?? ?? ?? 53 
-
+				#new use case
+				#B933B14300            mov     ecx, 0x43b133
 				data = i.bytes[i.bytes.length-4..i.bytes.length].reverse.map {|x| sprintf("%02X",x) }.join.hex
 				if data > @loadaddr && data < @loadaddr+@max
 					i.bytes[0..(i.bytes.length-5)].each {|x| sig << sprintf("%02X",x)}
